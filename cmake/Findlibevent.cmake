@@ -1,0 +1,6 @@
+set(libevent_ROOT $ENV{LIBEVENT_ROOT})
+if (libevent_ROOT)
+	set(libevent_INCLUDE_DIR ${libevent_ROOT}/include)
+	set(libevent_LIBRARY_DIR ${libevent_ROOT}/lib)
+	set(libevent_FOUND TRUE)
+endif()
