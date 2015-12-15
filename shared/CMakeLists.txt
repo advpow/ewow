@@ -6,7 +6,14 @@ project(shared)
 
 ###############################################################################
 set(shared_SRC
+	Typedef.h
 
+	net/Socket.h
+	net/Socket.cc
+	net/SocketManager.h
+	net/SocketManager.cc
+	net/SocketWorker.h
+	net/SocketWorker.cc
 )
 
 ###############################################################################
