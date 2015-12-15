@@ -10,17 +10,23 @@
 #include <fcntl.h>
 #endif
 #include "net/Socket.h"
+#include "net/SocketManager.h"
 
 Socket::Socket(void)
 : id_(-1)
+, ownerId_(-1)
+, sockMgr_(NULL)
 , fd_(-1)
+, evRecv_(NULL)
+, evSend_(NULL)
+, evBase_(NULL)
 {
 
 }
 
 Socket::~Socket(void)
 {
-    
+
 }
 
 bool Socket::open(ev_uintptr_t fd)
@@ -37,7 +43,9 @@ bool Socket::open(ev_uintptr_t fd)
 
 void Socket::close(void)
 {
-
+    _doClose();
+    if (sockMgr_)
+        sockMgr_->_closeSocket(this);
 }
 
 bool Socket::setnonblocking(ev_uintptr_t fd, bool on /* = true */)
@@ -58,7 +66,28 @@ void Socket::close(ev_uintptr_t fd)
     assert(fd != -1);
 #if defined(__WINDOWS__)
     ::closesocket(fd);
-#else
+#elif defined(__LINUX__)
     ::close(fd);
 #endif
+}
+
+void Socket::_doClose(void)
+{
+    if (evRecv_)
+    {
+        event_free(evRecv_);
+        evRecv_ = NULL;
+    }
+
+    if (evSend_)
+    {
+        event_free(evSend_);
+        evSend_ = NULL;
+    }
+
+    if (fd_ != -1)
+    {
+        Socket::close(fd_);
+        fd_ = -1;
+    }
 }

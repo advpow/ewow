@@ -14,8 +14,12 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/function.hpp>
+#include <boost/shared_ptr.hpp>
 #include <event2/event.h>
 #include "Typedef.h"
+
+class SocketManager;
+class SocketWorker;
 
 class Socket : public boost::noncopyable
 {
@@ -30,10 +34,24 @@ public:
     static bool setnonblocking(ev_uintptr_t fd, bool on = true);
     static void close(ev_uintptr_t fd);
 
-protected:
+private:
+    friend class SocketManager;
+
+    void _doClose(void);
+    static void _Recv(evutil_socket_t sock, short event, void* arg);
+
+private:
+    friend class SocketWorker;
+
     int id_;
+    int ownerId_;
+    SocketManager* sockMgr_;
     ev_uintptr_t fd_;
+    struct event *evRecv_;
+    struct event *evSend_;
+    struct event_base *evBase_;
     struct sockaddr_in addr_;
 };
+typedef boost::shared_ptr<Socket> SocketPtr;
 
 #endif /* SHARED_NET_SOCKET_H_ */
