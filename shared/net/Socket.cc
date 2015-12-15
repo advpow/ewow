@@ -91,3 +91,15 @@ void Socket::_doClose(void)
         fd_ = -1;
     }
 }
+
+void Socket::_doRecv(void)
+{
+
+}
+
+void Socket::_Recv(evutil_socket_t sock, short event, void* arg)
+{
+    Socket *pThis = static_cast<Socket*>(arg);
+    assert(pThis);
+    pThis->_doRecv();
+}

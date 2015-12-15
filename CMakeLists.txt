@@ -54,3 +54,4 @@ include_directories(
 
 ###############################################################################
 add_subdirectory(shared)
+add_subdirectory(realmd)

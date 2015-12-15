@@ -38,6 +38,7 @@ private:
     friend class SocketManager;
 
     void _doClose(void);
+    void _doRecv(void);
     static void _Recv(evutil_socket_t sock, short event, void* arg);
 
 private:

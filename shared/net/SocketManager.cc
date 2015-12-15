@@ -54,7 +54,6 @@ bool SocketManager::open(const char *addr, int port,
             break;
         if (!Socket::setnonblocking(sListen_))
             break;
-
         
         workers += 1;
         for (int x = 0; x < workers; ++x)
@@ -77,6 +76,7 @@ bool SocketManager::open(const char *addr, int port,
         if (0 != event_add(evListen_, NULL))
             break;
 
+        state_ = SocketManager::State::RUNNING;
         fOk = true;
     } while (false);
 
@@ -147,19 +147,19 @@ void SocketManager::close(void)
             x < workers_.size(); ++x)
         {
             workers_[x]->stop();
-            workers_[x]->join();
         }
-        workers_.clear();
     }
 }
 
 void SocketManager::join(void)
 {
+    assert(state_ == SocketManager::State::RUNNING);
     for (WorkerArray::size_type x = 0;
         x < workers_.size(); ++x)
     {
         workers_[x]->join();
     }
+    workers_.clear();
 }
 
 void SocketManager::setSocketFactory(SocketFactoryPtr factory)
