@@ -17,6 +17,8 @@ set(shared_SRC
 	util/ByteBuffer.cc
 	util/String.h
 	util/String.cc
+	util/IniFile.h
+	util/IniFile.cc
 	
 	crypto/BigNumber.h
 	crypto/BigNumber.cc
