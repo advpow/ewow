@@ -37,6 +37,9 @@ bool SocketManager::open(const char *addr, int port,
 
     do 
     {
+        if (noThread_ && workers != 0)
+            break;
+
         sListen_ = socket(AF_INET, SOCK_STREAM, 0);
         if (sListen_ == -1) break;
 
