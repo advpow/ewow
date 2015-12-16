@@ -1,0 +1,18 @@
+﻿///////////////////////////////////////////////////////////////////////////////
+// File:        SqlConnection.cc
+// Author:      671643387@qq.com
+// Date:        2015年12月16日 下午4:39:20
+// Description:
+///////////////////////////////////////////////////////////////////////////////
+
+#include "database/SqlConnection.h"
+
+SqlConnection::SqlConnection(void)
+{
+
+}
+
+SqlConnection::~SqlConnection(void)
+{
+
+}

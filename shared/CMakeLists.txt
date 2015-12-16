@@ -26,6 +26,15 @@ set(shared_SRC
 	net/SocketManager.cc
 	net/SocketWorker.h
 	net/SocketWorker.cc
+	
+	database/SqlField.h
+	database/SqlField.cc
+	database/SqlResultSet.h
+	database/SqlResultSet.cc
+	database/SqlConnection.h
+	database/SqlConnection.cc
+	database/SqlDatabase.h
+	database/SqlDatabase.inl
 )
 
 ###############################################################################
