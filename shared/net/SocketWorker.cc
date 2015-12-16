@@ -8,7 +8,7 @@
 #include <boost/bind.hpp>
 #include "net/SocketWorker.h"
 
-SocketWorker::SocketWorker(void)
+SocketWorker::SocketWorker()
 : id_(-1)
 , evBase_(NULL)
 , evTick_(NULL)
@@ -25,7 +25,7 @@ SocketWorker::~SocketWorker(void)
         event_base_free(evBase_);
 }
 
-bool SocketWorker::open(void)
+bool SocketWorker::open(bool noThread /* = false */)
 {
     struct timeval tv = { 1, 0 };
     evBase_ = event_base_new();
@@ -37,6 +37,9 @@ bool SocketWorker::open(void)
         {
             if (0 == event_add(evTick_, &tv))
             {
+                if (noThread)
+                    return true;
+
                 if (start())
                     return true;
             }

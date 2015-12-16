@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, signal_handler);
     {
-        SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()));
+        SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), true);
         if (sockmgr.open("0.0.0.0", 3724))
         {
             gsockmgr = &sockmgr;

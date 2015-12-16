@@ -11,8 +11,10 @@
 
 #define DEFAULT_SOCKET_MAP_SIZE 512
 
-SocketManager::SocketManager(SocketFactoryPtr factory /* = NULL */)
+SocketManager::SocketManager(SocketFactoryPtr factory /* = NULL */, 
+    bool noThread /* = false */)
 : sidGen_(0)
+, noThread_(noThread)
 , sListen_(-1)
 , evListen_(NULL)
 , state_(SocketManager::State::READY)
@@ -59,7 +61,7 @@ bool SocketManager::open(const char *addr, int port,
         for (int x = 0; x < workers; ++x)
         {
             SocketWorkerPtr worker(new SocketWorker());
-            if (worker && worker->open())
+            if (worker && worker->open(noThread_))
             {
                 worker->setId(x);
                 workers_.push_back(worker);
@@ -76,7 +78,9 @@ bool SocketManager::open(const char *addr, int port,
         if (0 != event_add(evListen_, NULL))
             break;
 
-        state_ = SocketManager::State::RUNNING;
+        if (!noThread_)
+            state_ = SocketManager::State::RUNNING;
+
         fOk = true;
     } while (false);
 
@@ -153,12 +157,22 @@ void SocketManager::close(void)
 
 void SocketManager::join(void)
 {
-    assert(state_ == SocketManager::State::RUNNING);
-    for (WorkerArray::size_type x = 0;
-        x < workers_.size(); ++x)
+    if (!noThread_)
     {
-        workers_[x]->join();
+        assert(state_ == SocketManager::State::RUNNING);
+        for (WorkerArray::size_type x = 0;
+            x < workers_.size(); ++x)
+        {
+            workers_[x]->join();
+        }
     }
+    else
+    {
+        assert(state_ == SocketManager::State::READY);
+        state_ = SocketManager::State::RUNNING;
+        workers_[0]->run();
+    }
+
     workers_.clear();
     state_ = SocketManager::State::EXIT;
 }

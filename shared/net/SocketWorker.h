@@ -25,7 +25,7 @@ public:
     SocketWorker(void);
     virtual ~SocketWorker(void);
 
-    bool open(void);
+    bool open(bool noThread = false);
     virtual void stop(void) { event_base_loopbreak(evBase_); }
 
     void setId(int id) { id_ = id; }

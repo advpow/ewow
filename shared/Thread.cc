@@ -21,7 +21,10 @@ Thread::Thread(void)
 
 Thread::~Thread(void)
 {
-
+#if defined(__WINDOWS__)
+    if (handle_ != -1L)
+        ::CloseHandle(HANDLE(handle_));
+#endif
 }
 
 bool Thread::start(void)
