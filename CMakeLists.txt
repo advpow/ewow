@@ -50,6 +50,7 @@ endif()
 ###############################################################################
 include_directories(
 	${PROJECT_SOURCE_DIR}/deps/include
+	${PROJECT_SOURCE_DIR}/deps/include/mysql
 	${PROJECT_SOURCE_DIR}/shared
 )
 if(WINDOWS)

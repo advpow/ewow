@@ -14,6 +14,8 @@ set(shared_SRC
 	util/CircleBuffer.cc
 	util/ByteBuffer.h
 	util/ByteBuffer.cc
+	util/String.h
+	util/String.cc
 	
 	crypto/BigNumber.h
 	crypto/BigNumber.cc
@@ -35,6 +37,10 @@ set(shared_SRC
 	database/SqlConnection.cc
 	database/SqlDatabase.h
 	database/SqlDatabase.inl
+	database/MysqlConnection.h
+	database/MysqlConnection.cc
+	database/MysqlResultSet.h
+	database/MysqlResultSet.cc
 )
 
 ###############################################################################
