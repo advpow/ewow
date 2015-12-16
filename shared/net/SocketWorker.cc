@@ -13,7 +13,6 @@ SocketWorker::SocketWorker(void)
 , evBase_(NULL)
 , evTick_(NULL)
 , load_(0)
-, thread_()
 {
 
 }
@@ -38,9 +37,7 @@ bool SocketWorker::open(void)
         {
             if (0 == event_add(evTick_, &tv))
             {
-                thread_ = boost::shared_ptr<boost::thread>(
-                    new boost::thread(boost::bind(&SocketWorker::_run, this)));
-                if (thread_)
+                if (start())
                     return true;
             }
 
@@ -73,7 +70,7 @@ bool SocketWorker::addSocket(SocketPtr& s)
     return false;
 }
 
-void SocketWorker::_run(void)
+void SocketWorker::run(void)
 {
     event_base_dispatch(evBase_);
 }

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <signal.h>
 #if defined(__WINDOWS__)
+#define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif
 
@@ -24,7 +25,7 @@ void signal_handler(int signal)
 int main(int argc, char *argv[])
 {
 #if defined(__WINDOWS__)
-    _CrtSetBreakAlloc(163);
+    //_CrtSetBreakAlloc(163);
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif

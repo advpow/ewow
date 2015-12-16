@@ -160,6 +160,7 @@ void SocketManager::join(void)
         workers_[x]->join();
     }
     workers_.clear();
+    state_ = SocketManager::State::EXIT;
 }
 
 void SocketManager::setSocketFactory(SocketFactoryPtr factory)

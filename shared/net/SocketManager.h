@@ -40,7 +40,7 @@ public:
     SocketManager(void);
     ~SocketManager(void);
 
-    bool open(const char *addr, int port, 
+    bool open(const char *addr, int port,
         int backlog = 1024, int workers = 0);
     void close(void);
     void join(void);

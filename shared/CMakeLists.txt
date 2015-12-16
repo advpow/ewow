@@ -7,6 +7,8 @@ project(shared)
 ###############################################################################
 set(shared_SRC
 	Typedef.h
+	Thread.h
+	Thread.cc
 
 	net/Socket.h
 	net/Socket.cc
