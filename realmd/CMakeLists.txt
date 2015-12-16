@@ -7,6 +7,11 @@ project(realmd)
 
 set(realmd_SOURCES
 	Main.cc
+	
+	net/RealmdSocket.h
+	net/RealmdSocket.cc
+	net/RealmdSocketFactory.h
+	net/RealmdSocketFactory.cc
 )
 
 ###############################################################################

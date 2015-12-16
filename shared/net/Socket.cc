@@ -12,6 +12,8 @@
 #include "net/Socket.h"
 #include "net/SocketManager.h"
 
+#define SOCKET_RECV_BUFF_SIZE   0x1000
+
 Socket::Socket(void)
 : id_(-1)
 , ownerId_(-1)
@@ -20,6 +22,7 @@ Socket::Socket(void)
 , evRecv_(NULL)
 , evSend_(NULL)
 , evBase_(NULL)
+, recvBuf_(SOCKET_RECV_BUFF_SIZE)
 {
 
 }
@@ -43,9 +46,9 @@ bool Socket::open(ev_uintptr_t fd)
 
 void Socket::close(void)
 {
+    assert(sockMgr_);
     _doClose();
-    if (sockMgr_)
-        sockMgr_->_closeSocket(this);
+    sockMgr_->_closeSocket(this);
 }
 
 bool Socket::setnonblocking(ev_uintptr_t fd, bool on /* = true */)
@@ -71,8 +74,70 @@ void Socket::close(ev_uintptr_t fd)
 #endif
 }
 
+void Socket::onRead(void)
+{
+    
+}
+
+void Socket::onClose(void)
+{
+
+}
+
+int Socket::_recv(BYTE_t *buf, int len)
+{
+#if defined(__WINDOWS__)
+    int ret = ::recv(fd_, (char*)buf, int(len), 0);
+#elif defined(__LINUX__)
+    int ret = ::recv(fd_, (char*)buf, len, 0);
+#endif
+    if (ret == SOCKET_ERROR)
+    {
+#if defined(__LINUX__)
+        if (errno == EWOULDBLOCK)
+        {
+            return SOCKET_ERROR_WOULDBLOCK;
+        }
+#elif defined(__WINDOWS__)
+        int wsaError = WSAGetLastError();
+        if (wsaError == WSAEWOULDBLOCK)
+        {
+            return SOCKET_ERROR_WOULDBLOCK;
+        }
+#endif
+    }
+    return ret;
+}
+
+int Socket::_send(const BYTE_t *buf, int len)
+{
+#if defined(__WINDOWS__)
+    int ret = ::send(fd_, (const char*)buf, int(len), 0);
+#elif defined(__LINUX__)
+    int ret = ::send(fd_, (const char*)buf, len, flags);
+#endif
+    if (ret == SOCKET_ERROR)
+    {
+#if defined(__LINUX__)
+        if (errno == EWOULDBLOCK)
+        {
+            return SOCKET_ERROR_WOULDBLOCK;
+        }
+#elif defined(__WINDOWS__)
+        int wsaError = WSAGetLastError();
+        if (wsaError == WSAEWOULDBLOCK)
+        {
+            return SOCKET_ERROR_WOULDBLOCK;
+        }
+#endif
+    }
+    return ret;
+}
+
 void Socket::_doClose(void)
 {
+    onClose();
+
     if (evRecv_)
     {
         event_free(evRecv_);
@@ -94,7 +159,26 @@ void Socket::_doClose(void)
 
 void Socket::_doRecv(void)
 {
-
+    bool fOk = true;
+    while (recvBuf_.space() > 0)
+    {
+        BYTE_t buff[0x1000];
+        std::size_t bytesToRecv = __MIN_(recvBuf_.space(), sizeof(buff));
+        int nRead = _recv(buff, int(bytesToRecv));
+        if (nRead > 0)
+            recvBuf_.write(buff, nRead);
+        else if (nRead == SOCKET_ERROR_WOULDBLOCK)
+            break;
+        else
+        {
+            fOk = false;
+            break;
+        }
+    }
+    if (!fOk)
+        close();
+    else
+        onRead();
 }
 
 void Socket::_Recv(evutil_socket_t sock, short event, void* arg)

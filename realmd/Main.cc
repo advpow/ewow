@@ -13,6 +13,7 @@
 #endif
 
 #include "net/SocketManager.h"
+#include "net/RealmdSocketFactory.h"
 
 SocketManager *gsockmgr = NULL;
 
@@ -32,8 +33,8 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, signal_handler);
     {
-        SocketManager sockmgr;
-        if (sockmgr.open("0.0.0.0", 8888))
+        SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()));
+        if (sockmgr.open("0.0.0.0", 3724))
         {
             gsockmgr = &sockmgr;
             sockmgr.join();

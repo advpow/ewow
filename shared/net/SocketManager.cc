@@ -11,12 +11,12 @@
 
 #define DEFAULT_SOCKET_MAP_SIZE 512
 
-SocketManager::SocketManager(void)
+SocketManager::SocketManager(SocketFactoryPtr factory /* = NULL */)
 : sidGen_(0)
 , sListen_(-1)
 , evListen_(NULL)
 , state_(SocketManager::State::READY)
-, sFactory_()
+, sFactory_(factory)
 , sockets_(DEFAULT_SOCKET_MAP_SIZE)
 {
 
@@ -206,8 +206,9 @@ void SocketManager::_doAccept(void)
         return;
 
     SocketPtr sock = sFactory_->create();
-    if (sock && sock->open(sListen_))
+    if (sock && sock->open(newsock))
     {
+        sock->sockMgr_ = this;
         SocketWorker *worker = findFreeWorker();
         if (worker->addSocket(sock))
         {

@@ -17,4 +17,15 @@
 
 typedef std::uint8_t    BYTE_t;
 
+///////////////////////////////////////////////////////////////////////////////
+
+#if defined(__LINUX__)
+#define SOCKET_ERROR            -1
+#endif
+
+#define SOCKET_ERROR_WOULDBLOCK -500
+
+///////////////////////////////////////////////////////////////////////////////
+#define __MIN_(x, y)    ((x) > (y) ? (y) : (x))
+
 #endif /* SHARED_TYPEDEF_H_ */
