@@ -47,4 +47,7 @@ private:
 
 #include "database/SqlDatabase.inl"
 
+#include "database/MysqlConnection.h"
+typedef SqlDatabase<MysqlConnection>    MysqlDatabase;
+
 #endif /* SHARED_DATABASE_SQLDATABASE_H_ */

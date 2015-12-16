@@ -9,6 +9,7 @@ set(shared_SRC
 	Typedef.h
 	Thread.h
 	Thread.cc
+	Log.h
 	
 	util/CircleBuffer.h
 	util/CircleBuffer.cc

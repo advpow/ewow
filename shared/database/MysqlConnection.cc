@@ -5,6 +5,7 @@
 // Description:
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "Log.h"
 #include "util/String.h"
 #include "database/MysqlResultSet.h"
 #include "database/MysqlConnection.h"
@@ -82,8 +83,8 @@ bool MysqlConnection::open(std::string info)
         if (!mysql_real_connect(my_, host.c_str(), user.c_str(),
             password.c_str(), database.c_str(), port, unix_socket, 0))
         {
-            //ERROR_LOG("could not connect to MYSQL database at %s: %s",
-            //    host.c_str(), mysql_error(my_));
+            ERROR_LOG("could not connect to MYSQL database at %s: %s",
+                host.c_str(), mysql_error(my_));
             mysql_close(my_);
             my_ = NULL;
             break;
@@ -118,7 +119,7 @@ SqlResultSetPtr MysqlConnection::query(std::string sql)
         }
     }
     else
-        ;// ERROR_LOG("MysqlConnection::Query %s", mysql_error(my_));
+        ERROR_LOG("MysqlConnection::Query %s", mysql_error(my_));
     return SqlResultSetPtr();
 }
 
@@ -126,6 +127,6 @@ bool MysqlConnection::execute(std::string sql)
 {
     if (!mysql_query(my_, sql.c_str()))
         return true;
-    //ERROR_LOG("MysqlConnection::Execute %s", mysql_error(my_));
+    ERROR_LOG("MysqlConnection::Execute %s", mysql_error(my_));
     return false;
 }
