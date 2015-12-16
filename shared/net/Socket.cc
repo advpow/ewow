@@ -23,6 +23,7 @@ Socket::Socket(void)
 , evSend_(NULL)
 , evBase_(NULL)
 , recvBuf_(SOCKET_RECV_BUFF_SIZE)
+, sendPending_(false)
 {
 
 }
@@ -49,6 +50,23 @@ void Socket::close(void)
     assert(sockMgr_);
     _doClose();
     sockMgr_->_closeSocket(this);
+}
+
+void Socket::send(const BYTE_t *buf, std::size_t len)
+{
+    SendBufferPtr sendBuf(new SendBuffer(buf, len));
+    if (sendBuf)
+    {
+        {
+            boost::lock_guard<boost::mutex> guard(sendQueueLOCK_);
+            sendQueue_.push_back(sendBuf);
+        }
+
+        _doSend();
+        return;
+    }
+
+    close();
 }
 
 bool Socket::setnonblocking(ev_uintptr_t fd, bool on /* = true */)
@@ -134,6 +152,18 @@ int Socket::_send(const BYTE_t *buf, int len)
     return ret;
 }
 
+bool Socket::_notifySend(void)
+{
+    assert(evBase_);
+    if (!evSend_)
+    {
+        evSend_ = event_new(evBase_, fd_, 
+            EV_WRITE, &Socket::_Send, this);
+    }
+
+    return (evSend_ && (0 == event_add(evSend_, NULL)));
+}
+
 void Socket::_doClose(void)
 {
     onClose();
@@ -181,9 +211,59 @@ void Socket::_doRecv(void)
         onRead();
 }
 
+void Socket::_doSend(void)
+{
+    if (sendPending_)
+        return;
+    sendPending_ = true;
+    
+    SendBuffer *sendBuf = NULL;
+    {
+        boost::lock_guard<boost::mutex> guard(sendQueueLOCK_);
+        if (!sendQueue_.empty())
+            sendBuf = sendQueue_.front().get();
+    }
+
+    if (!sendBuf)
+    {
+        sendPending_ = false;
+        return;
+    }
+
+    if (!_notifySend())
+    {
+        close();
+        return;
+    }
+
+    int nSend = _send(sendBuf->contents(), sendBuf->size());
+    if (nSend == SOCKET_ERROR)
+    {
+        close();
+        return;
+    }
+
+    if (nSend > 0)
+        sendBuf->rpos(nSend);
+
+    if (sendBuf->size() <= 0)
+    {
+        boost::lock_guard<boost::mutex> guard(sendQueueLOCK_);
+        sendQueue_.pop_front();
+    }
+}
+
 void Socket::_Recv(evutil_socket_t sock, short event, void* arg)
 {
     Socket *pThis = static_cast<Socket*>(arg);
     assert(pThis);
     pThis->_doRecv();
+}
+
+void Socket::_Send(evutil_socket_t sock, short event, void* arg)
+{
+    Socket *pThis = static_cast<Socket*>(arg);
+    assert(pThis);
+    pThis->sendPending_ = false;
+    pThis->_doSend();
 }

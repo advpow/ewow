@@ -23,6 +23,10 @@ void RealmdSocket::onRead(void)
 {
     printf("RealmdSocket::onRead, %d, %d bytes in buffer\n", getId(),
         size());
+
+    BYTE_t buf[0x1000];
+    std::size_t nRead = recv(buf, sizeof(buf));
+    send(buf, nRead);
 }
 
 void RealmdSocket::onClose(void)
