@@ -12,6 +12,8 @@
 #include <crtdbg.h>
 #endif
 
+#include "crypto/Sha1.h"
+
 #include "net/SocketManager.h"
 #include "net/RealmdSocketFactory.h"
 

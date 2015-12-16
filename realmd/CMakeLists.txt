@@ -28,6 +28,7 @@ link_directories(
 add_executable(realmd ${realmd_SOURCES})
 target_link_libraries(realmd shared)
 if(WINDOWS)
-target_link_libraries(realmd ws2_32 libevent libevent_core libevent_extras)
+target_link_libraries(realmd ws2_32 libevent 
+libevent_core libevent_extras libeay32)
 else()
 endif()

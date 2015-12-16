@@ -49,8 +49,20 @@ endif()
 
 ###############################################################################
 include_directories(
+	${PROJECT_SOURCE_DIR}/deps/include
 	${PROJECT_SOURCE_DIR}/shared
 )
+if(WINDOWS)
+	if (64BIT)
+		link_directories(
+			${PROJECT_SOURCE_DIR}/deps/lib/x64
+		)
+	else()
+		link_directories(
+			${PROJECT_SOURCE_DIR}/deps/lib/win32
+		)
+	endif()
+endif()
 
 ###############################################################################
 add_subdirectory(shared)

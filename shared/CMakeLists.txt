@@ -12,6 +12,13 @@ set(shared_SRC
 	
 	util/CircleBuffer.h
 	util/CircleBuffer.cc
+	util/ByteBuffer.h
+	util/ByteBuffer.cc
+	
+	crypto/BigNumber.h
+	crypto/BigNumber.cc
+	crypto/Sha1.h
+	crypto/Sha1.cc
 
 	net/Socket.h
 	net/Socket.cc
