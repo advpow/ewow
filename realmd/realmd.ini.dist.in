@@ -1,0 +1,7 @@
+; realmd.ini
+[RealmdConf]
+BindIP              = 0.0.0.0
+BindPort            = 3724
+BindBacklog         = 1024
+
+LoginDBInfo         = 127.0.0.1;3306;ewow;ewow;realmd

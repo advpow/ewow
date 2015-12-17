@@ -22,11 +22,11 @@ public:
     virtual ~MysqlConnection(void);
 
 public:
-    virtual bool open(std::string info);
+    virtual bool open(const std::string &info);
     virtual void close(void);
 
-    virtual SqlResultSetPtr query(std::string sql);
-    virtual bool execute(std::string sql);
+    virtual SqlResultSetPtr query(const std::string &sql);
+    virtual bool execute(const std::string &sql);
 
 private:
     MYSQL*  my_;

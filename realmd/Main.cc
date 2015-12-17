@@ -12,18 +12,29 @@
 #include <crtdbg.h>
 #endif
 
-#include "crypto/Sha1.h"
-
+#include "Log.h"
+#include "util/IniFile.h"
 #include "net/SocketManager.h"
 #include "net/RealmdSocketFactory.h"
+#include "database/SqlDatabase.h"
 
+
+// 配置文件
+IniFile sConfig;
+// 登录数据库
+MysqlDatabase sLoginDB;
+// 套接字管理器
 SocketManager *gsockmgr = NULL;
 
+
+/* 信号处理程序 */
 void signal_handler(int signal)
 {
+    // 收到SIGINT信号，关闭服务器
     if (signal == SIGINT)
         gsockmgr->close();
 }
+
 
 int main(int argc, char *argv[])
 {
@@ -35,11 +46,36 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, signal_handler);
     {
-        SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), true);
-        if (sockmgr.open("0.0.0.0", 3724))
+        try
         {
-            gsockmgr = &sockmgr;
-            sockmgr.join();
+            do 
+            {
+                // 读取配置
+                sConfig.open("realmd.ini");
+
+                // 打开数据库连接
+                if (!sLoginDB.initialize(sConfig.get<std::string>("RealmdConf.LoginDBInfo")))
+                {
+                    ERROR_LOG("Initialize login database failed");
+                    break;
+                }
+
+                // 启动网络服务
+                SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), true);
+                if (sockmgr.open(sConfig.get<std::string>("RealmdConf.BindIP").c_str(), 
+                    sConfig.get<int>("RealmdConf.BindPort"), sConfig.get<int>("RealmdConf.BindBacklog")))
+                {
+                    gsockmgr = &sockmgr;
+                    sockmgr.join();
+
+                    // 关闭数据库
+                    sLoginDB.close();
+                }
+            } while (false);
+        }
+        catch (...)
+        {
+            ERROR_LOG("Startup realmd server failed");
         }
     }
 

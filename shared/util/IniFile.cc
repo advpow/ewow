@@ -7,19 +7,19 @@
 
 #include "util/IniFile.h"
 
-Ini::Ini(void)
+IniFile::IniFile(void)
 {
 
 }
 
-Ini::Ini(const std::string &file)
+IniFile::IniFile(const std::string &file)
 {
     boost::property_tree::ini_parser::read_ini(file, file_);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Ini::open(const std::string &file)
+void IniFile::open(const std::string &file)
 {
     boost::property_tree::ini_parser::read_ini(file, file_);
 }

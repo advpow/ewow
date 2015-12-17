@@ -25,7 +25,7 @@ MysqlConnection::~MysqlConnection(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-bool MysqlConnection::open(std::string info)
+bool MysqlConnection::open(const std::string &info)
 {
     my_ = mysql_init(NULL);
 
@@ -106,7 +106,7 @@ void MysqlConnection::close(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SqlResultSetPtr MysqlConnection::query(std::string sql)
+SqlResultSetPtr MysqlConnection::query(const std::string &sql)
 {
     if (!mysql_query(my_, sql.c_str()))
     {
@@ -123,7 +123,7 @@ SqlResultSetPtr MysqlConnection::query(std::string sql)
     return SqlResultSetPtr();
 }
 
-bool MysqlConnection::execute(std::string sql)
+bool MysqlConnection::execute(const std::string &sql)
 {
     if (!mysql_query(my_, sql.c_str()))
         return true;

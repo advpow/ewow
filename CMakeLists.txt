@@ -52,6 +52,7 @@ include_directories(
 	${PROJECT_SOURCE_DIR}/deps/include
 	${PROJECT_SOURCE_DIR}/deps/include/mysql
 	${PROJECT_SOURCE_DIR}/shared
+	${PROJECT_SOURCE_DIR}/common
 )
 if(WINDOWS)
 	if (64BIT)
@@ -67,4 +68,5 @@ endif()
 
 ###############################################################################
 add_subdirectory(shared)
+add_subdirectory(common)
 add_subdirectory(realmd)

@@ -12,7 +12,11 @@
 # pragma once
 #endif
 
+#include "crypto/BigNumber.h"
+#include "crypto/Sha1.h"
+#include "util/ByteBuffer.h"
 #include "net/Socket.h"
+#include "Common.h"
 
 class RealmdSocket : public Socket
 {
@@ -20,9 +24,34 @@ public:
     RealmdSocket(void);
     virtual ~RealmdSocket(void);
 
+public:
+    bool _handleLogonChallenge(void);
+    bool _handleLogonProof(void);
+    bool _handleReconnectChallenge(void);
+    bool _handleReconnectProof(void);
+    bool _handleRealmList(void);
+    bool _handleXferAccept(void);
+    bool _handleXferResume(void);
+    bool _handleXferCancel(void);
+
 protected:
     virtual void onRead(void);
     virtual void onClose(void);
+
+private:
+    BigNumber N_, s_, g_, v_;
+    BigNumber b_, B_;
+    BigNumber K_;
+    BigNumber reconnectProof_;
+
+    bool bAuthed_;
+
+    std::string loginName_;
+    std::string safeLoginName_;
+
+    std::string localizationName_;
+    std::uint16_t build_;
+    eAccountTypes accountSecurityLevel_;
 };
 
 #endif /* REALMD_NET_REALMDSOCKET_H_ */

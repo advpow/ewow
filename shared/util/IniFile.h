@@ -17,11 +17,11 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 
-class Ini : public boost::noncopyable
+class IniFile : public boost::noncopyable
 {
 public:
-    Ini(void);
-    Ini(const std::string &file);
+    IniFile(void);
+    IniFile(const std::string &file);
 
 public:
     void open(const std::string &file);

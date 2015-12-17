@@ -6,6 +6,9 @@ project(realmd)
 ###############################################################################
 
 set(realmd_SOURCES
+	Realmd.h
+	RealmdList.h
+	RealmdList.cc
 	Main.cc
 	
 	net/RealmdSocket.h
@@ -29,6 +32,6 @@ add_executable(realmd ${realmd_SOURCES})
 target_link_libraries(realmd shared)
 if(WINDOWS)
 target_link_libraries(realmd ws2_32 libevent 
-libevent_core libevent_extras libeay32)
+libevent_core libevent_extras libeay32 libmysql)
 else()
 endif()
