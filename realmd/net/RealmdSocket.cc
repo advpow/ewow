@@ -9,6 +9,9 @@
 #include "Log.h"
 #include "Realmd.h"
 #include "net/RealmdSocket.h"
+#include "database/SqlDatabase.h"
+
+#define s_BYTE_SIZE 32
 
 enum eStatus
 {
@@ -125,6 +128,8 @@ const AuthHandler table[] =
 
 #define AUTH_TOTAL_COMMANDS sizeof(table)/sizeof(AuthHandler)
 
+extern MysqlDatabase sLoginDB;
+
 RealmdSocket::RealmdSocket(void)
 : bAuthed_(false)
 , build_(0)
@@ -145,7 +150,7 @@ void RealmdSocket::onRead(void)
     BYTE_t cmd;
     while (true)
     {
-        if (!recv(&cmd, 1))
+        if (!peek(&cmd, 1))
             return;
 
         std::size_t x;
@@ -184,12 +189,286 @@ void RealmdSocket::onClose(void)
 ///////////////////////////////////////////////////////////////////////////////
 bool RealmdSocket::_handleLogonChallenge(void)
 {
-    return false;
+    DEBUG_LOG("Entering _HandleLogonChallenge");
+    if (size() < sizeof(sAuthLogonChallenge_C))
+        return false;
+
+    // 接收数据包
+    std::vector<BYTE_t> buf;
+    buf.resize(4);
+    recv(&buf[0], 4);
+
+    std::uint16_t remaining = ((sAuthLogonChallenge_C*)&buf[0])->size;
+    DEBUG_LOG("[AuthChallenge] got header, body is %#04x bytes", remaining);
+    if ((remaining < sizeof(sAuthLogonChallenge_C)-buf.size()) || (size() < remaining))
+        return false;
+
+    buf.resize(remaining + buf.size() + 1);
+    buf[buf.size() - 1] = 0;
+    recv(&buf[4], remaining);
+
+    sAuthLogonChallenge_C *ch = (sAuthLogonChallenge_C*)&buf[0];
+    DEBUG_LOG("[AuthChallenge] got full packet, %#04x bytes", ch->size);
+    DEBUG_LOG("[AuthChallenge] name(%d): '%s'", ch->I_len, ch->I);
+
+    ByteBuffer pkt;
+
+    loginName_ = (const char*)ch->I;
+    build_ = ch->build;
+    safeLoginName_ = loginName_;
+    sLoginDB.escapeString(safeLoginName_);
+
+    pkt << (BYTE_t)CMD_AUTH_LOGON_CHALLENGE;
+    pkt << (BYTE_t)0;
+
+    // 查询IP地址是否被封
+    std::string address = getPeerAddress();
+    sLoginDB.escapeString(address);
+    SqlResultSetPtr result = sLoginDB.pquery("SELECT unbandate FROM ip_banned WHERE "
+        //    permanent                    still banned
+        "(unbandate = bandate OR unbandate > UNIX_TIMESTAMP()) AND ip = '%s'", address.c_str());
+    if (result)
+    {
+        // IP地址被封
+        pkt << (BYTE_t)WOW_FAIL_BANNED;
+        BASIC_LOG("[AuthChallenge] Banned ip %s tries to login!", address.c_str());
+    }
+    else
+    {
+        // 查询帐号数据
+        result = sLoginDB.pquery("SELECT sha_pass_hash,id,locked,last_ip,gmlevel,v,s FROM account WHERE username = '%s'", safeLoginName_.c_str());
+        if (result)
+        {
+            bool locked = false;
+            if ((*result)[2]->getUInt8() == 1)
+            {
+                // 帐号锁定IP登录
+                DEBUG_LOG("[AuthChallenge] Account '%s' is locked to IP - '%s'", loginName_.c_str(), (*result)[3]->getCString());
+                DEBUG_LOG("[AuthChallenge] Player address is '%s'", address.c_str());
+                if (strcmp((*result)[3]->getCString(), getPeerAddress().c_str()))
+                {
+                    // 当前登录IP和帐号锁定IP不一致
+                    DEBUG_LOG("[AuthChallenge] Account IP differs");
+                    pkt << (BYTE_t)WOW_FAIL_SUSPENDED;
+                    locked = true;
+                }
+            }
+
+            if (!locked)
+            {
+                // 查询帐号封锁数据
+                SqlResultSetPtr banresult = sLoginDB.pquery("SELECT bandate,unbandate FROM account_banned WHERE "
+                    "id = %u AND active = 1 AND (unbandate > UNIX_TIMESTAMP() OR unbandate = bandate)", (*result)[1]->getUInt32());
+                if (banresult)
+                {
+                    if ((*banresult)[0]->getUInt64() == (*banresult)[1]->getUInt64())
+                    {
+                        pkt << (BYTE_t)WOW_FAIL_BANNED;
+                        BASIC_LOG("[AuthChallenge] Banned account %s tries to login!", loginName_.c_str());
+                    }
+                    else
+                    {
+                        pkt << (BYTE_t)WOW_FAIL_SUSPENDED;
+                        BASIC_LOG("[AuthChallenge] Temporarily banned account %s tries to login!", loginName_.c_str());
+                    }
+                }
+                else
+                {
+                    // 获取帐号密码hash值
+                    std::string rI = (*result)[0]->getCppString();
+
+                    // 获取保存的v,s字段
+                    std::string dbV = (*result)[5]->getCppString();
+                    std::string dbS = (*result)[6]->getCppString();
+
+                    DEBUG_LOG("database authentication values: v='%s' s='%s'", dbV.c_str(), dbS.c_str());
+
+                    if (dbV.size() != s_BYTE_SIZE * 2 || dbS.size() != s_BYTE_SIZE * 2)
+                        _setVSField(rI);
+                    else
+                    {
+                        s_.setHexStr(dbS.c_str());
+                        v_.setHexStr(dbV.c_str());
+                    }
+
+                    // SRP计算
+                    b_.setRand(19 * 8);
+                    BigNumber gmod = g_.modExp(b_, N_);
+                    B_ = ((v_ * 3) + gmod) % N_;
+
+                    assert(gmod.getNumBytes() <= 32);
+
+                    BigNumber unk3;
+                    unk3.setRand(16 * 8);
+
+                    // 填充响应包
+                    pkt << (BYTE_t)WOW_SUCCESS;
+
+                    pkt.append(B_.asByteArray(32), 32);
+
+                    pkt << (BYTE_t)1;
+                    pkt.append(g_.asByteArray(), 1);
+
+                    pkt << (BYTE_t)32;
+                    pkt.append(N_.asByteArray(32), 32);
+                    pkt.append(s_.asByteArray(), s_.getNumBytes());
+                    pkt.append(unk3.asByteArray(16), 16);
+                    
+                    BYTE_t securityFlags = 0;
+                    pkt << securityFlags;
+                    if (securityFlags & 0x01)
+                    {
+                        pkt << std::uint32_t(0);
+                        pkt << std::uint64_t(0) << std::uint64_t(0);
+                    }
+                    if (securityFlags & 0x02)
+                    {
+                        pkt << BYTE_t(0);
+                        pkt << BYTE_t(0);
+                        pkt << BYTE_t(0);
+                        pkt << BYTE_t(0);
+                        pkt << std::uint64_t(0);
+                    }
+                    if (securityFlags & 0x04)
+                    {
+                        pkt << BYTE_t(1);
+                    }
+
+                    // 解析帐号安全等级和登录地区
+                    BYTE_t secLevel = (*result)[4]->getUInt8();
+                    accountSecurityLevel_ = secLevel <= SEC_ADMINISTRATOR ? eAccountTypes(secLevel) : SEC_ADMINISTRATOR;
+
+                    localizationName_.resize(4);
+                    for (int x = 0; x < 4; ++x)
+                        localizationName_[x] = ch->country[4 - x - 1];
+
+                    BASIC_LOG("[AuthChallenge] account %s is using '%c%c%c%c' locale (%u)", 
+                        loginName_.c_str(), ch->country[3], ch->country[2], ch->country[1], ch->country[0], 
+                        GetLocaleByName(localizationName_));
+                }
+            }
+        }
+        else
+        {
+            // 没有这个帐号
+            pkt << (BYTE_t)WOW_FAIL_UNKNOWN_ACCOUNT;
+        }
+    }
+
+    send(pkt.contents(), pkt.size());
+    return true;
 }
 
 bool RealmdSocket::_handleLogonProof(void)
 {
-    return false;
+    DEBUG_LOG("Entering _HandleLogonProof");
+    ///- Read the packet
+    sAuthLogonProof_C lp;
+    if (size() < sizeof(sAuthLogonProof_C))
+        return false;
+    recv((BYTE_t*)&lp, sizeof(sAuthLogonProof_C));
+
+    // TODO: 检查版本
+
+    // SRP6计算
+    BigNumber A;
+    A.setBinary(lp.A, 32);
+
+    if (A.isZero())
+        return false;
+
+    Sha1Hash sha;
+    sha.updateBigNumbers(&A, &B_, NULL);
+    sha.finalize();
+
+    BigNumber u;
+    u.setBinary(sha.getDigest(), sha.getLength());
+    BigNumber S = (A * (v_.modExp(u, N_))).modExp(b_, N_);
+
+    BYTE_t t[32];
+    BYTE_t t1[16];
+    BYTE_t vK[40];
+    memcpy(t, S.asByteArray(32), 32);
+    for (int x = 0; x < 16; ++x)
+        t1[x] = t[x * 2];
+
+    sha.initialize();
+    sha.updateData(t1, 16);
+    sha.finalize();
+    for (int x = 0; x < 20; ++x)
+        vK[x * 2] = sha.getDigest()[x];
+    for (int x = 0; x < 16; ++x)
+        t1[x] = t[x * 2 + 1];
+    sha.initialize();
+    sha.updateData(t1, 16);
+    sha.finalize();
+    for (int x = 0; x < 20; ++x)
+        vK[x * 2 + 1] = sha.getDigest()[x];
+    K_.setBinary(vK, 40);
+
+    BYTE_t hash[20];
+
+    sha.initialize();
+    sha.updateBigNumbers(&N_, NULL);
+    sha.finalize();
+    memcpy(hash, sha.getDigest(), sha.getLength());
+
+    sha.initialize();
+    sha.updateBigNumbers(&g_, NULL);
+    sha.finalize();
+    for (int x = 0; x < 20; ++x)
+        hash[x] ^= sha.getDigest()[x];
+
+    BigNumber t3;
+    t3.setBinary(hash, 20);
+
+    sha.initialize();
+    sha.updateData(loginName_);
+    sha.finalize();
+    BYTE_t t4[SHA_DIGEST_LENGTH];
+    memcpy(t4, sha.getDigest(), SHA_DIGEST_LENGTH);
+
+    sha.initialize();
+    sha.updateBigNumbers(&t3, NULL);
+    sha.updateData(t4, SHA_DIGEST_LENGTH);
+    sha.updateBigNumbers(&s_, &A, &B_, &K_, NULL);
+    sha.finalize();
+
+    BigNumber M;
+    M.setBinary(sha.getDigest(), sha.getLength());
+
+    if (!memcmp(M.asByteArray(), lp.M1, 20))
+    {
+        // 登录校验成功
+        BASIC_LOG("User '%s' successfully authenticated", loginName_.c_str());
+
+        // 保存SessionKey(K)，更新帐号数据
+        const char *K_hex = K_.asHexStr();
+        sLoginDB.pexecute("UPDATE account SET sessionkey = '%s', last_ip = '%s', last_login = NOW(), "
+            "locale = '%u', failed_logins = 0 WHERE username = '%s'", 
+            K_hex, getPeerAddress().c_str(), GetLocaleByName(localizationName_), safeLoginName_.c_str());
+        BigNumber::free((void*)K_hex);
+
+        // 发送登录验证数据
+        sha.initialize();
+        sha.updateBigNumbers(&A, &M, &K_, NULL);
+        sha.finalize();
+        _sendProof(sha);
+
+        // 登录成功
+        bAuthed_ = true;
+    }
+    else
+    {
+        BYTE_t data[2] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT };
+        send(data, sizeof(data));
+
+        BASIC_LOG("[AuthChallenge] account %s tried to login with wrong password!", loginName_.c_str());
+
+        // TODO: 统计帐号登录失败次数封锁帐号
+    }
+
+    return true;
 }
 
 bool RealmdSocket::_handleReconnectChallenge(void)
@@ -209,15 +488,62 @@ bool RealmdSocket::_handleRealmList(void)
 
 bool RealmdSocket::_handleXferAccept(void)
 {
+    close();
     return false;
 }
 
 bool RealmdSocket::_handleXferResume(void)
 {
+    close();
     return false;
 }
 
 bool RealmdSocket::_handleXferCancel(void)
 {
+    close();
     return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void RealmdSocket::_setVSField(const std::string& rI)
+{
+    s_.setRand(s_BYTE_SIZE * 8);
+
+    BigNumber I;
+    I.setHexStr(rI.c_str());
+
+    std::uint8_t digest[SHA_DIGEST_LENGTH];
+    memset(digest, 0, SHA_DIGEST_LENGTH);
+    if (I.getNumBytes() <= SHA_DIGEST_LENGTH)
+        memcpy(digest, I.asByteArray(), I.getNumBytes());
+    std::reverse(digest, digest + SHA_DIGEST_LENGTH);
+
+    Sha1Hash sha;
+    sha.updateData(s_.asByteArray(), s_.getNumBytes());
+    sha.updateData(digest, SHA_DIGEST_LENGTH);
+    sha.finalize();
+
+    BigNumber x;
+    x.setBinary(sha.getDigest(), sha.getLength());
+
+    v_ = g_.modExp(x, N_);
+
+    const char *v_hex, *s_hex;
+    v_hex = v_.asHexStr();
+    s_hex = s_.asHexStr();
+    sLoginDB.pexecute("UPDATE account SET v = '%s', s = '%s' WHERE username = '%s'",
+        v_hex, s_hex, safeLoginName_.c_str());
+    BigNumber::free((void*)v_hex);
+    BigNumber::free((void*)s_hex);
+}
+
+void RealmdSocket::_sendProof(Sha1Hash &sha)
+{
+    sAuthLogonProof_S_BUILD_6005 proof;
+    memcpy(proof.M2, sha.getDigest(), 20);
+    proof.cmd = CMD_AUTH_LOGON_PROOF;
+    proof.error = 0;
+    proof.unk2 = 0x00;
+
+    send((BYTE_t*)&proof, sizeof(proof));
 }

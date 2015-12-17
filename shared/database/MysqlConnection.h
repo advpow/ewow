@@ -25,8 +25,8 @@ public:
     virtual bool open(const std::string &info);
     virtual void close(void);
 
-    virtual SqlResultSetPtr query(const std::string &sql);
-    virtual bool execute(const std::string &sql);
+    virtual SqlResultSetPtr query(const char *sql);
+    virtual bool execute(const char *sql);
 
 private:
     MYSQL*  my_;

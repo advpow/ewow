@@ -106,9 +106,9 @@ void MysqlConnection::close(void)
 
 ///////////////////////////////////////////////////////////////////////////////
 
-SqlResultSetPtr MysqlConnection::query(const std::string &sql)
+SqlResultSetPtr MysqlConnection::query(const char *sql)
 {
-    if (!mysql_query(my_, sql.c_str()))
+    if (!mysql_query(my_, sql))
     {
         MYSQL_RES* res = mysql_store_result(my_);
         if (res != NULL)
@@ -123,9 +123,9 @@ SqlResultSetPtr MysqlConnection::query(const std::string &sql)
     return SqlResultSetPtr();
 }
 
-bool MysqlConnection::execute(const std::string &sql)
+bool MysqlConnection::execute(const char *sql)
 {
-    if (!mysql_query(my_, sql.c_str()))
+    if (!mysql_query(my_, sql))
         return true;
     ERROR_LOG("MysqlConnection::Execute %s", mysql_error(my_));
     return false;

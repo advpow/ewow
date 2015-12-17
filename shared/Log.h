@@ -12,8 +12,10 @@
 # pragma once
 #endif
 
-#define BASIC_LOG
-#define ERROR_LOG
-#define DEBUG_LOG
+#include <stdio.h>
+
+#define BASIC_LOG(fmt, ...) printf(fmt, __VA_ARGS__); printf("\n")
+#define ERROR_LOG(fmt, ...) printf(fmt, __VA_ARGS__); printf("\n")
+#define DEBUG_LOG(fmt, ...) printf(fmt, __VA_ARGS__); printf("\n")
 
 #endif /* SHARED_LOG_H_ */

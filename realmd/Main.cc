@@ -65,6 +65,8 @@ int main(int argc, char *argv[])
                 if (sockmgr.open(sConfig.get<std::string>("RealmdConf.BindIP").c_str(), 
                     sConfig.get<int>("RealmdConf.BindPort"), sConfig.get<int>("RealmdConf.BindBacklog")))
                 {
+                    DEBUG_LOG("realmd is startup");
+
                     gsockmgr = &sockmgr;
                     sockmgr.join();
 

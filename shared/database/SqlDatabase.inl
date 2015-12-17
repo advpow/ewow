@@ -35,12 +35,12 @@ void SqlDatabase<T>::escapeString(std::string& s)
 }
 
 template<typename T>
-SqlResultSetPtr SqlDatabase<T>::pquery(const std::string &sql, ...)
+SqlResultSetPtr SqlDatabase<T>::pquery(const char *sql, ...)
 {
     char lsql[MAX_QUERY_LEN];
     std::va_list varg;
     va_start(varg, sql);
-    int ret = vsnprintf(lsql, MAX_QUERY_LEN, sql.c_str(), varg);
+    int ret = vsnprintf(lsql, MAX_QUERY_LEN, sql, varg);
     va_end(varg);
     if (ret == -1)
     {
@@ -51,12 +51,12 @@ SqlResultSetPtr SqlDatabase<T>::pquery(const std::string &sql, ...)
 }
 
 template<typename T>
-bool SqlDatabase<T>::pexecute(const std::string &sql, ...)
+bool SqlDatabase<T>::pexecute(const char *sql, ...)
 {
     char lsql[MAX_QUERY_LEN];
     std::va_list varg;
     va_start(varg, sql);
-    int ret = vsnprintf(lsql, MAX_QUERY_LEN, sql.c_str(), varg);
+    int ret = vsnprintf(lsql, MAX_QUERY_LEN, sql, varg);
     va_end(varg);
     if (ret == -1)
     {

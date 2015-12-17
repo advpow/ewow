@@ -44,6 +44,9 @@ public:
 
     void send(const BYTE_t *buf, std::size_t len);
 
+    std::string getPeerAddress(void);
+    int getPeerPort(void);
+
 public:
     static bool setnonblocking(ev_uintptr_t fd, bool on = true);
     static void close(ev_uintptr_t fd);

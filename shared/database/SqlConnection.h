@@ -26,8 +26,8 @@ public:
     virtual bool open(const std::string &info) = 0;
     virtual void close(void) = 0;
 
-    virtual SqlResultSetPtr query(const std::string &sql) = 0;
-    virtual bool execute(const std::string &sql) = 0;
+    virtual SqlResultSetPtr query(const char *sql) = 0;
+    virtual bool execute(const char *sql) = 0;
 };
 typedef boost::shared_ptr<SqlConnection>    SqlConnectionPtr;
 

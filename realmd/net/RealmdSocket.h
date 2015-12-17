@@ -39,6 +39,10 @@ protected:
     virtual void onClose(void);
 
 private:
+    void _setVSField(const std::string& rI);
+    void _sendProof(Sha1Hash &sha);
+
+private:
     BigNumber N_, s_, g_, v_;
     BigNumber b_, B_;
     BigNumber K_;

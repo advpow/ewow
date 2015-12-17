@@ -69,6 +69,16 @@ void Socket::send(const BYTE_t *buf, std::size_t len)
     close();
 }
 
+std::string Socket::getPeerAddress(void)
+{
+    return std::string(::inet_ntoa(addr_.sin_addr));
+}
+
+int Socket::getPeerPort(void)
+{
+    return int(::ntohs(addr_.sin_port));
+}
+
 bool Socket::setnonblocking(ev_uintptr_t fd, bool on /* = true */)
 {
 #if defined(__WINDOWS__)

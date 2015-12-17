@@ -38,8 +38,8 @@ public:
 
     void escapeString(std::string& s);
 
-    SqlResultSetPtr pquery(const std::string &sql, ...);
-    bool pexecute(const std::string &sql, ...);
+    SqlResultSetPtr pquery(const char *sql, ...);
+    bool pexecute(const char *sql, ...);
 
 private:
     SqlConnectionPtr conn_;
