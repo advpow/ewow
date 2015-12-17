@@ -10,6 +10,7 @@
 #include "Realmd.h"
 #include "net/RealmdSocket.h"
 #include "database/SqlDatabase.h"
+#include "RealmList.h"
 
 #define s_BYTE_SIZE 32
 
@@ -129,6 +130,7 @@ const AuthHandler table[] =
 #define AUTH_TOTAL_COMMANDS sizeof(table)/sizeof(AuthHandler)
 
 extern MysqlDatabase sLoginDB;
+extern RealmList sRealmList;
 
 RealmdSocket::RealmdSocket(void)
 : bAuthed_(false)
@@ -143,6 +145,16 @@ RealmdSocket::RealmdSocket(void)
 RealmdSocket::~RealmdSocket(void)
 {
 
+}
+
+bool RealmdSocket::open(ev_uintptr_t fd)
+{
+    if (Socket::open(fd))
+    {
+        BASIC_LOG("%s connected", getPeerAddress().c_str());
+        return true;
+    }
+    return false;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,7 +196,7 @@ void RealmdSocket::onRead(void)
 
 void RealmdSocket::onClose(void)
 {
-
+    BASIC_LOG("%s disconnected", getPeerAddress().c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -495,11 +507,13 @@ bool RealmdSocket::_handleLogonProof(void)
 
 bool RealmdSocket::_handleReconnectChallenge(void)
 {
+    close();
     return false;
 }
 
 bool RealmdSocket::_handleReconnectProof(void)
 {
+    close();
     return false;
 }
 
@@ -511,9 +525,6 @@ bool RealmdSocket::_handleRealmList(void)
         return false;
     }
     skip(5);
-
-    ///- Update realm list if need
-    //sRealmList.UpdateIfNeed();
 
     ByteBuffer pkt;
     _loadRealmlist(pkt);
@@ -591,5 +602,34 @@ void RealmdSocket::_sendProof(Sha1Hash &sha)
 
 void RealmdSocket::_loadRealmlist(ByteBuffer &pkt)
 {
+    // 更新服务器列表
+    sRealmList.update();
 
+    pkt << uint32_t(0);
+    pkt << uint8_t(sRealmList.getRealmCount());
+
+    // 遍历所有服务器
+    RealmList::iterator iter = sRealmList.begin();
+    for (; iter != sRealmList.end(); ++iter)
+    {
+        // 查询帐号在该服务器角色数量
+        SqlResultSetPtr result = sLoginDB.pquery(
+            "SELECT numchars FROM realmcharacters WHERE realmid = %d AND acctid = %d;",
+            iter->id, accountId_);
+
+        uint8_t chars = 0;
+        if (result)
+            chars = (*result)[0]->getUInt8();
+
+        pkt << uint32_t(iter->icon);            // icon
+        pkt << uint8_t(iter->realmflags);       // realm flag
+        pkt << iter->name;                      // realm name
+        pkt << iter->address;                   // realm address
+        pkt << iter->populationLevel;           // population
+        pkt << chars;                           // amount of characters
+        pkt << iter->timezone;                  // timezone
+        pkt << uint8_t(0x00);                   // unk
+    }
+
+    pkt << uint16_t(0x0002);
 }

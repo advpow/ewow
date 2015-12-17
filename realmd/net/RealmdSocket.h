@@ -24,6 +24,8 @@ public:
     RealmdSocket(void);
     virtual ~RealmdSocket(void);
 
+    virtual bool open(ev_uintptr_t fd);
+
 public:
     bool _handleLogonChallenge(void);
     bool _handleLogonProof(void);

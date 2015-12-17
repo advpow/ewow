@@ -17,14 +17,14 @@
 #include "net/SocketManager.h"
 #include "net/RealmdSocketFactory.h"
 #include "database/SqlDatabase.h"
+#include "RealmList.h"
 
-
-// 配置文件
-IniFile sConfig;
 // 登录数据库
 MysqlDatabase sLoginDB;
 // 套接字管理器
 SocketManager *gsockmgr = NULL;
+// 服务器列表
+RealmList sRealmList;
 
 
 /* 信号处理程序 */
@@ -51,10 +51,10 @@ int main(int argc, char *argv[])
             do 
             {
                 // 读取配置
-                sConfig.open("realmd.ini");
+                IniFile config("realmd.ini");
 
                 // 打开数据库连接
-                if (!sLoginDB.initialize(sConfig.get<std::string>("RealmdConf.LoginDBInfo")))
+                if (!sLoginDB.initialize(config.get<std::string>("RealmdConf.LoginDBInfo")))
                 {
                     ERROR_LOG("Initialize login database failed");
                     break;
@@ -62,14 +62,16 @@ int main(int argc, char *argv[])
 
                 // 启动网络服务
                 SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), true);
-                if (sockmgr.open(sConfig.get<std::string>("RealmdConf.BindIP").c_str(), 
-                    sConfig.get<int>("RealmdConf.BindPort"), sConfig.get<int>("RealmdConf.BindBacklog")))
+                if (sockmgr.open(config.get<std::string>("RealmdConf.BindIP").c_str(),
+                    config.get<int>("RealmdConf.BindPort"), config.get<int>("RealmdConf.BindBacklog")))
                 {
                     DEBUG_LOG("realmd is startup");
 
                     gsockmgr = &sockmgr;
                     sockmgr.join();
-
+                    
+                    // 清空服务器列表
+                    sRealmList.clear();
                     // 关闭数据库
                     sLoginDB.close();
                 }

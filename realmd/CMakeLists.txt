@@ -7,8 +7,8 @@ project(realmd)
 
 set(realmd_SOURCES
 	Realmd.h
-	RealmdList.h
-	RealmdList.cc
+	RealmList.h
+	RealmList.cc
 	Main.cc
 	
 	net/RealmdSocket.h

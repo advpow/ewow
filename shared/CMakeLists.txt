@@ -19,6 +19,8 @@ set(shared_SRC
 	util/String.cc
 	util/IniFile.h
 	util/IniFile.cc
+	util/Time.h
+	util/Time.cc
 	
 	crypto/BigNumber.h
 	crypto/BigNumber.cc
