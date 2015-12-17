@@ -368,7 +368,17 @@ bool RealmdSocket::_handleLogonProof(void)
         return false;
     recv((BYTE_t*)&lp, sizeof(sAuthLogonProof_C));
 
-    // TODO: 检查版本
+    // 检查版本
+    switch (build_)
+    {
+    case 5875:                                          // 1.12.1
+    case 6005:                                          // 1.12.2
+    case 6141:                                          // 1.12.3
+        break;
+    default:
+        close();
+        return false;
+    }
 
     // SRP6计算
     BigNumber A;
@@ -460,8 +470,17 @@ bool RealmdSocket::_handleLogonProof(void)
     }
     else
     {
-        BYTE_t data[2] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT };
-        send(data, sizeof(data));
+        if (build_ > 6005)                                  // > 1.12.2
+        {
+            BYTE_t data[4] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT, 3, 0 };
+            send(data, sizeof(data));
+        }
+        else
+        {
+            // 1.x not react incorrectly at 4-byte message use 3 as real error
+            BYTE_t data[2] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_UNKNOWN_ACCOUNT };
+            send(data, sizeof(data));
+        }
 
         BASIC_LOG("[AuthChallenge] account %s tried to login with wrong password!", loginName_.c_str());
 
