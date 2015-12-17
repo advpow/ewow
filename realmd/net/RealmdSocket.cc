@@ -132,6 +132,7 @@ extern MysqlDatabase sLoginDB;
 
 RealmdSocket::RealmdSocket(void)
 : bAuthed_(false)
+, accountId_(0)
 , build_(0)
 , accountSecurityLevel_(SEC_PLAYER)
 {
@@ -342,6 +343,8 @@ bool RealmdSocket::_handleLogonChallenge(void)
                     for (int x = 0; x < 4; ++x)
                         localizationName_[x] = ch->country[4 - x - 1];
 
+                    accountId_ = (*result)[1]->getUInt32();
+
                     BASIC_LOG("[AuthChallenge] account %s is using '%c%c%c%c' locale (%u)", 
                         loginName_.c_str(), ch->country[3], ch->country[2], ch->country[1], ch->country[0], 
                         GetLocaleByName(localizationName_));
@@ -502,7 +505,26 @@ bool RealmdSocket::_handleReconnectProof(void)
 
 bool RealmdSocket::_handleRealmList(void)
 {
-    return false;
+    DEBUG_LOG("Entering _HandleRealmList");
+    if (size() < 5)
+    {
+        return false;
+    }
+    skip(5);
+
+    ///- Update realm list if need
+    //sRealmList.UpdateIfNeed();
+
+    ByteBuffer pkt;
+    _loadRealmlist(pkt);
+
+    ByteBuffer hdr;
+    hdr << (BYTE_t)CMD_REALM_LIST;
+    hdr << (std::uint16_t)pkt.size();
+    hdr.append(pkt);
+
+    send((BYTE_t*)hdr.contents(), hdr.size());
+    return true;
 }
 
 bool RealmdSocket::_handleXferAccept(void)
@@ -565,4 +587,9 @@ void RealmdSocket::_sendProof(Sha1Hash &sha)
     proof.unk2 = 0x00;
 
     send((BYTE_t*)&proof, sizeof(proof));
+}
+
+void RealmdSocket::_loadRealmlist(ByteBuffer &pkt)
+{
+
 }

@@ -41,6 +41,7 @@ protected:
 private:
     void _setVSField(const std::string& rI);
     void _sendProof(Sha1Hash &sha);
+    void _loadRealmlist(ByteBuffer &pkt);
 
 private:
     BigNumber N_, s_, g_, v_;
@@ -49,6 +50,8 @@ private:
     BigNumber reconnectProof_;
 
     bool bAuthed_;
+
+    std::uint32_t accountId_;
 
     std::string loginName_;
     std::string safeLoginName_;
