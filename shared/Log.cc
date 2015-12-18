@@ -98,5 +98,24 @@ void Log::setForegroundColor(ConsoleColor color, bool intensity /* = false */)
     }
     if (intensity) wcolor |= FOREGROUND_INTENSITY;
     ::SetConsoleTextAttribute(::GetStdHandle(STD_OUTPUT_HANDLE), wcolor);
+#elif defined(__LINUX__)
+    switch (color)
+    {
+    case Log::ForegroundWhite:
+        std::cout << "\033[37m";
+        break;
+    case Log::ForegroundBlue:
+        std::cout << "\033[34m";
+        break;
+    case Log::ForegroundRed:
+        std::cout << "\033[31m";
+        break;
+    case Log::ForegroundGreen:
+        std::cout << "\033[32m";
+        break;
+    default:
+        break;
+    }
+    if (intensity) std::cout << "\033[1m";
 #endif
 }
