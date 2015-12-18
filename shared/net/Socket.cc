@@ -36,9 +36,11 @@ Socket::~Socket(void)
 bool Socket::open(ev_uintptr_t fd)
 {
     assert(fd != -1);
+    // 获取套接字远程地址
     int addrlen = sizeof(addr_);
     if (0 != ::getpeername(fd, (struct sockaddr*)&addr_, &addrlen))
         return false;
+    // 设置套接字非阻塞模式
     if (!Socket::setnonblocking(fd))
         return false;
     fd_ = fd;
@@ -58,10 +60,12 @@ void Socket::send(const BYTE_t *buf, std::size_t len)
     if (sendBuf)
     {
         {
+            // 将数据包添加到发送队列末尾
             boost::lock_guard<boost::mutex> guard(sendQueueLOCK_);
             sendQueue_.push_back(sendBuf);
         }
 
+        // 尝试发送数据
         _doSend();
         return;
     }
@@ -223,12 +227,17 @@ void Socket::_doRecv(void)
 
 void Socket::_doSend(void)
 {
-    if (sendPending_)
-        return;
-    sendPending_ = true;
+    {
+        // 判断是否正在发送数据包
+        boost::lock_guard<boost::mutex> guard(sendPendingLOCK_);
+        if (sendPending_)
+            return;
+        sendPending_ = true;
+    }
     
     SendBuffer *sendBuf = NULL;
     {
+        // 取队列头数据包
         boost::lock_guard<boost::mutex> guard(sendQueueLOCK_);
         if (!sendQueue_.empty())
             sendBuf = sendQueue_.front().get();
@@ -240,12 +249,14 @@ void Socket::_doSend(void)
         return;
     }
 
+    // 设置发送完毕事件
     if (!_notifySend())
     {
         close();
         return;
     }
 
+    // 发送数据
     int nSend = _send(sendBuf->contents(), sendBuf->size());
     if (nSend == SOCKET_ERROR)
     {
@@ -256,6 +267,7 @@ void Socket::_doSend(void)
     if (nSend > 0)
         sendBuf->rpos(nSend);
 
+    // 如果数据包数据全部发送，则将其移除
     if (sendBuf->size() <= 0)
     {
         boost::lock_guard<boost::mutex> guard(sendQueueLOCK_);
@@ -274,6 +286,11 @@ void Socket::_Send(evutil_socket_t sock, short event, void* arg)
 {
     Socket *pThis = static_cast<Socket*>(arg);
     assert(pThis);
-    pThis->sendPending_ = false;
+    {
+        // 发送完毕
+        boost::lock_guard<boost::mutex> guard(pThis->sendPendingLOCK_);
+        pThis->sendPending_ = false;
+    }
+    // 发送下一个包
     pThis->_doSend();
 }

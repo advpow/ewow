@@ -203,7 +203,7 @@ void RealmdSocket::onClose(void)
 bool RealmdSocket::_handleLogonChallenge(void)
 {
     // 处理登录请求
-    DEBUG_LOG("Entering _HandleLogonChallenge");
+    DEBUG_LOG("Entering _handleLogonChallenge");
     if (size() < sizeof(sAuthLogonChallenge_C))
         return false;
 
@@ -378,7 +378,7 @@ bool RealmdSocket::_handleLogonChallenge(void)
 bool RealmdSocket::_handleLogonProof(void)
 {
     // 登录验证
-    DEBUG_LOG("Entering _HandleLogonProof");
+    DEBUG_LOG("Entering _handleLogonProof");
     ///- Read the packet
     sAuthLogonProof_C lp;
     if (size() < sizeof(sAuthLogonProof_C))
@@ -522,7 +522,7 @@ bool RealmdSocket::_handleReconnectProof(void)
 bool RealmdSocket::_handleRealmList(void)
 {
     // 获取服务器列表
-    DEBUG_LOG("Entering _HandleRealmList");
+    DEBUG_LOG("Entering _handleRealmList");
     if (size() < 5)
     {
         return false;
@@ -585,6 +585,7 @@ void RealmdSocket::_setVSField(const std::string& rI)
 
     v_ = g_.modExp(x, N_);
 
+    // 保存v,s到数据库
     const char *v_hex, *s_hex;
     v_hex = v_.asHexStr();
     s_hex = s_.asHexStr();
@@ -615,8 +616,8 @@ void RealmdSocket::_loadRealmlist(ByteBuffer &pkt)
     // 获取服务器列表的一个拷贝
     RealmList::RealmArray realms = sRealmList.getRealms();
 
-    pkt << uint32_t(0);
-    pkt << uint8_t(realms.size());
+    pkt << std::uint32_t(0);
+    pkt << BYTE_t(realms.size());
 
     // 遍历所有服务器
     RealmList::iterator iter = realms.begin();
@@ -627,18 +628,18 @@ void RealmdSocket::_loadRealmlist(ByteBuffer &pkt)
             "SELECT numchars FROM realmcharacters WHERE realmid = %d AND acctid = %d;",
             iter->id, accountId_);
 
-        uint8_t chars = 0;
+        BYTE_t chars = 0;
         if (result)
             chars = (*result)[0]->getUInt8();
 
-        pkt << uint32_t(iter->icon);            // icon
-        pkt << uint8_t(iter->realmflags);       // 服务器标志
+        pkt << std::uint32_t(iter->icon);       // icon
+        pkt << BYTE_t(iter->realmflags);        // 服务器标志
         pkt << iter->name;                      // 服务器名
         pkt << iter->address;                   // 服务器地址
         pkt << iter->populationLevel;           // population
         pkt << chars;                           // 帐号在该服务器角色数量
         pkt << iter->timezone;                  // 服务器时区
-        pkt << uint8_t(0x00);                   // unk
+        pkt << BYTE_t(0x00);                    // unk
     }
 
     pkt << uint16_t(0x0002);

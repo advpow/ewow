@@ -119,6 +119,7 @@ private:
     SendQueue sendQueue_;
     boost::mutex sendQueueLOCK_;
     bool sendPending_;
+    boost::mutex sendPendingLOCK_;
 };
 typedef boost::shared_ptr<Socket> SocketPtr;
 
