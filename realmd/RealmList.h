@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <boost/thread/mutex.hpp>
 #include "Common.h"
 #include "util/Time.h"
 
@@ -41,15 +42,14 @@ public:
     ~RealmList(void);
 
     void update(void);
-    size_type getRealmCount(void) { return realms_.size(); }
-    iterator begin(void) { return realms_.begin(); }
-    iterator end(void) { return realms_.end(); }
+    RealmArray getRealms(void) const;
 
     void clear(void) { realms_.clear(); }
 
 private:
-    TIME_t      updateTime_;
-    RealmArray  realms_;
+    TIME_t               updateTime_;
+    RealmArray           realms_;
+    mutable boost::mutex realmsLOCK_;
 };
 
 #endif /* REALMD_REALMDLIST_H_ */

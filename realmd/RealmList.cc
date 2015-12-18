@@ -5,6 +5,7 @@
 // Description:
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <boost/thread/lock_guard.hpp>
 #include "Log.h"
 #include "Realmd.h"
 #include "RealmList.h"
@@ -27,6 +28,9 @@ RealmList::~RealmList(void)
 
 void RealmList::update(void)
 {
+    boost::lock_guard<boost::mutex> guard(realmsLOCK_);
+
+    // 计算是否需要从数据库更新服务器列表
     TIME_t now = fromStartup();
     if ((now - updateTime_) < REALM_UPDATE_INTERVAL)
         return;
@@ -36,6 +40,7 @@ void RealmList::update(void)
 
     DEBUG_LOG("load realms from database");
 
+    // 从数据库加载服务器列表
     SqlResultSetPtr result = sLoginDB.pquery("SELECT * FROM realmlist;");
     if (result)
     {
@@ -53,4 +58,10 @@ void RealmList::update(void)
             realms_.push_back(realm);
         } while (result->nextRow());
     }
+}
+
+RealmList::RealmArray RealmList::getRealms(void) const
+{
+    boost::lock_guard<boost::mutex> guard(realmsLOCK_);
+    return realms_;
 }

@@ -39,7 +39,7 @@ void signal_handler(int signal)
 int main(int argc, char *argv[])
 {
 #if defined(__WINDOWS__)
-    //_CrtSetBreakAlloc(163);
+    _CrtSetBreakAlloc(159);
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
@@ -60,10 +60,12 @@ int main(int argc, char *argv[])
                     break;
                 }
 
+                int netThreads = config.get<int>("RealmdConf.NetThreads");
+
                 // 启动网络服务
-                SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), true);
+                SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), (netThreads == 0));
                 if (sockmgr.open(config.get<std::string>("RealmdConf.BindIP").c_str(),
-                    config.get<int>("RealmdConf.BindPort"), config.get<int>("RealmdConf.BindBacklog")))
+                    config.get<int>("RealmdConf.BindPort"), config.get<int>("RealmdConf.BindBacklog"), netThreads))
                 {
                     DEBUG_LOG("realmd is startup");
 

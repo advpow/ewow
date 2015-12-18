@@ -202,6 +202,7 @@ void RealmdSocket::onClose(void)
 ///////////////////////////////////////////////////////////////////////////////
 bool RealmdSocket::_handleLogonChallenge(void)
 {
+    // 处理登录请求
     DEBUG_LOG("Entering _HandleLogonChallenge");
     if (size() < sizeof(sAuthLogonChallenge_C))
         return false;
@@ -376,6 +377,7 @@ bool RealmdSocket::_handleLogonChallenge(void)
 
 bool RealmdSocket::_handleLogonProof(void)
 {
+    // 登录验证
     DEBUG_LOG("Entering _HandleLogonProof");
     ///- Read the packet
     sAuthLogonProof_C lp;
@@ -519,6 +521,7 @@ bool RealmdSocket::_handleReconnectProof(void)
 
 bool RealmdSocket::_handleRealmList(void)
 {
+    // 获取服务器列表
     DEBUG_LOG("Entering _HandleRealmList");
     if (size() < 5)
     {
@@ -559,6 +562,8 @@ bool RealmdSocket::_handleXferCancel(void)
 ///////////////////////////////////////////////////////////////////////////////
 void RealmdSocket::_setVSField(const std::string& rI)
 {
+    // 计算v,s
+
     s_.setRand(s_BYTE_SIZE * 8);
 
     BigNumber I;
@@ -591,6 +596,8 @@ void RealmdSocket::_setVSField(const std::string& rI)
 
 void RealmdSocket::_sendProof(Sha1Hash &sha)
 {
+    // 发送登录验证响应数据
+
     sAuthLogonProof_S_BUILD_6005 proof;
     memcpy(proof.M2, sha.getDigest(), 20);
     proof.cmd = CMD_AUTH_LOGON_PROOF;
@@ -605,12 +612,15 @@ void RealmdSocket::_loadRealmlist(ByteBuffer &pkt)
     // 更新服务器列表
     sRealmList.update();
 
+    // 获取服务器列表的一个拷贝
+    RealmList::RealmArray realms = sRealmList.getRealms();
+
     pkt << uint32_t(0);
-    pkt << uint8_t(sRealmList.getRealmCount());
+    pkt << uint8_t(realms.size());
 
     // 遍历所有服务器
-    RealmList::iterator iter = sRealmList.begin();
-    for (; iter != sRealmList.end(); ++iter)
+    RealmList::iterator iter = realms.begin();
+    for (; iter != realms.end(); ++iter)
     {
         // 查询帐号在该服务器角色数量
         SqlResultSetPtr result = sLoginDB.pquery(
@@ -622,12 +632,12 @@ void RealmdSocket::_loadRealmlist(ByteBuffer &pkt)
             chars = (*result)[0]->getUInt8();
 
         pkt << uint32_t(iter->icon);            // icon
-        pkt << uint8_t(iter->realmflags);       // realm flag
-        pkt << iter->name;                      // realm name
-        pkt << iter->address;                   // realm address
+        pkt << uint8_t(iter->realmflags);       // 服务器标志
+        pkt << iter->name;                      // 服务器名
+        pkt << iter->address;                   // 服务器地址
         pkt << iter->populationLevel;           // population
-        pkt << chars;                           // amount of characters
-        pkt << iter->timezone;                  // timezone
+        pkt << chars;                           // 帐号在该服务器角色数量
+        pkt << iter->timezone;                  // 服务器时区
         pkt << uint8_t(0x00);                   // unk
     }
 
