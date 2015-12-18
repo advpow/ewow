@@ -509,14 +509,118 @@ bool RealmdSocket::_handleLogonProof(void)
 
 bool RealmdSocket::_handleReconnectChallenge(void)
 {
-    close();
-    return false;
+    // 重登录请求
+    DEBUG_LOG("Entering _handleReconnectChallenge");
+    if (size() < sizeof(sAuthLogonChallenge_C))
+        return false;
+
+    // 接收数据包
+    std::vector<BYTE_t> buf;
+    buf.resize(4);
+
+    recv((BYTE_t*)&buf[0], 4);
+
+    std::uint16_t remaining = ((sAuthLogonChallenge_C*)&buf[0])->size;
+    DEBUG_LOG("[ReconnectChallenge] got header, body is %#04x bytes", remaining);
+
+    if ((remaining < sizeof(sAuthLogonChallenge_C)-buf.size()) || (size() < remaining))
+        return false;
+
+    buf.resize(remaining + buf.size() + 1);
+    buf[buf.size() - 1] = 0;
+    sAuthLogonChallenge_C* ch = (sAuthLogonChallenge_C*)&buf[0];
+
+    recv((BYTE_t*)&buf[4], remaining);
+    DEBUG_LOG("[ReconnectChallenge] got full packet, %#04x bytes", ch->size);
+    DEBUG_LOG("[ReconnectChallenge] name(%d): '%s'", ch->I_len, ch->I);
+
+    loginName_ = (const char*)ch->I;
+    safeLoginName_ = loginName_;
+    sLoginDB.escapeString(safeLoginName_);
+    build_ = ch->build;
+
+    // 检查版本
+    switch (build_)
+    {
+    case 5875:                                          // 1.12.1
+    case 6005:                                          // 1.12.2
+    case 6141:                                          // 1.12.3
+        break;
+    default:
+        close();
+        return false;
+    }
+
+    // 查询sessionKey和帐号id
+    SqlResultSetPtr result = sLoginDB.pquery("SELECT sessionkey,id FROM account WHERE username = '%s'", 
+        safeLoginName_.c_str());
+    if (!result)
+    {
+        ERROR_LOG("[ERROR] user %s tried to login and we can not find his session key in the database.", 
+            loginName_.c_str());
+        close();
+        return false;
+    }
+
+    K_.setHexStr((*result)[0]->getCString());
+    accountId_ = (*result)[1]->getUInt32();
+
+    // 发送响应
+    ByteBuffer pkt;
+    pkt << (BYTE_t)CMD_AUTH_RECONNECT_CHALLENGE;
+    pkt << (BYTE_t)0x00;
+    reconnectProof_.setRand(16 * 8);
+    pkt.append(reconnectProof_.asByteArray(16), 16);        // 16 bytes random
+    pkt << (std::uint64_t)0x00 << (std::uint64_t)0x00;                  // 16 bytes zeros
+    send((const BYTE_t*)pkt.contents(), pkt.size());
+    return true;
 }
 
 bool RealmdSocket::_handleReconnectProof(void)
 {
-    close();
-    return false;
+    // 重登录验证
+    DEBUG_LOG("Entering _handleReconnectProof");
+    
+    // 接收数据包
+    sAuthReconnectProof_C lp;
+    if (!recv((BYTE_t*)&lp, sizeof(sAuthReconnectProof_C)))
+        return false;
+
+    if (loginName_.empty() || !reconnectProof_.getNumBytes() || !K_.getNumBytes())
+        return false;
+
+    BigNumber t1;
+    t1.setBinary(lp.R1, 16);
+
+    Sha1Hash sha;
+    sha.initialize();
+    sha.updateData(loginName_);
+    sha.updateBigNumbers(&t1, &reconnectProof_, &K_, NULL);
+    sha.finalize();
+
+    if (!memcmp(sha.getDigest(), lp.R2, SHA_DIGEST_LENGTH))
+    {
+        ///- Sending response
+        ByteBuffer pkt;
+        pkt << (BYTE_t)CMD_AUTH_RECONNECT_PROOF;
+        pkt << (BYTE_t)0x00;
+        //If we keep from sending this we don't receive Session Expired on the client when
+        //changing realms after being logged on to the world
+        if (build_ > 6141) // Last vanilla, 1.12.3
+            pkt << (std::uint16_t)0x00;                               // 2 bytes zeros
+        send((BYTE_t const*)pkt.contents(), pkt.size());
+
+        // 验证成功
+        bAuthed_ = true;
+
+        return true;
+    }
+    else
+    {
+        ERROR_LOG("[ERROR] user %s tried to login, but session invalid.", loginName_.c_str());
+        close();
+        return false;
+    }
 }
 
 bool RealmdSocket::_handleRealmList(void)
@@ -543,18 +647,21 @@ bool RealmdSocket::_handleRealmList(void)
 
 bool RealmdSocket::_handleXferAccept(void)
 {
+    // 不支持
     close();
     return false;
 }
 
 bool RealmdSocket::_handleXferResume(void)
 {
+    // 不支持
     close();
     return false;
 }
 
 bool RealmdSocket::_handleXferCancel(void)
 {
+    // 不支持
     close();
     return false;
 }

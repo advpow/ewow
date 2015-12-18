@@ -35,7 +35,6 @@ void signal_handler(int signal)
         gsockmgr->close();
 }
 
-
 int main(int argc, char *argv[])
 {
 #if defined(__WINDOWS__)
