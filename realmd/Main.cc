@@ -38,7 +38,7 @@ void signal_handler(int signal)
 int main(int argc, char *argv[])
 {
 #if defined(__WINDOWS__)
-    _CrtSetBreakAlloc(159);
+    //_CrtSetBreakAlloc(664);
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 #endif
