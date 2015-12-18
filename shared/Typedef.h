@@ -19,6 +19,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #elif defined(__LINUX__)
+#include <time.h>
 #endif
 
 typedef std::uint8_t    BYTE_t;
