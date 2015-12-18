@@ -31,13 +31,19 @@ link_directories(
 add_executable(realmd ${realmd_SOURCES})
 target_link_libraries(realmd shared common)
 if(WINDOWS)
-target_link_libraries(realmd ws2_32 libevent 
-libevent_core libevent_extras libeay32 libmysql)
+target_link_libraries(realmd 
+	ws2_32 
+	libevent 
+	libevent_core 
+	libevent_extras 
+	libeay32 
+	libmysql
+)
 else()
 target_link_libraries(realmd  
-event 
-${OPENSSL_LIBRARIES}
-${MYSQL_LIBRARY}
-boost_system
+	event 
+	${OPENSSL_LIBRARIES}
+	${MYSQL_LIBRARY}
+	boost_system
 )
 endif()
