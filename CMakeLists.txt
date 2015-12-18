@@ -5,9 +5,11 @@ set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 project(ewow)
 
 ###############################################################################
-option(64BIT "64BIT" FALSE)
-if (64BIT)
+if(CMAKE_SIZEOF_VOID_P MATCHES 8)
+	message(STATUS "Detected 64-bit platform.")
 	add_definitions(-D__64BIT__)
+else()
+	message(STATUS "Detected 32-bit platform.")
 endif()
 
 option(WINDOWS "WINDOWS" FALSE)
