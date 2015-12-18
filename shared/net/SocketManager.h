@@ -37,7 +37,7 @@ typedef boost::shared_ptr<SocketFactory>    SocketFactoryPtr;
 class SocketManager : public boost::noncopyable
 {
 public:
-    SocketManager(SocketFactoryPtr factory = NULL, bool noThread = false);
+    SocketManager(SocketFactoryPtr factory = SocketFactoryPtr(), bool noThread = false);
     ~SocketManager(void);
 
     bool open(const char *addr, int port,

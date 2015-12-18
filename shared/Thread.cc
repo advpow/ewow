@@ -6,6 +6,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <cassert>
+#if defined(__LINUX__)
+#include <unistd.h>
+#endif
 #include "Thread.h"
 
 Thread::Thread(void)

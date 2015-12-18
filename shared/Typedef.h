@@ -32,10 +32,15 @@ typedef std::uint8_t    BYTE_t;
 
 #define SOCKET_ERROR_WOULDBLOCK -500
 
+#if defined(__WINDOWS__)
+typedef int		socklen_t;
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__WINDOWS__)
 typedef DWORD   TIME_t;
 #elif defined(__LINUX__)
+typedef long	TIME_t;
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////

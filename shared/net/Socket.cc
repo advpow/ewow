@@ -8,6 +8,8 @@
 #include <cassert>
 #if defined(__LINUX__)
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #endif
 #include "net/Socket.h"
 #include "net/SocketManager.h"
@@ -37,7 +39,7 @@ bool Socket::open(ev_uintptr_t fd)
 {
     assert(fd != -1);
     // 获取套接字远程地址
-    int addrlen = sizeof(addr_);
+    socklen_t addrlen = sizeof(addr_);
     if (0 != ::getpeername(fd, (struct sockaddr*)&addr_, &addrlen))
         return false;
     // 设置套接字非阻塞模式
@@ -146,7 +148,7 @@ int Socket::_send(const BYTE_t *buf, int len)
 #if defined(__WINDOWS__)
     int ret = ::send(fd_, (const char*)buf, int(len), 0);
 #elif defined(__LINUX__)
-    int ret = ::send(fd_, (const char*)buf, len, flags);
+    int ret = ::send(fd_, (const char*)buf, len, 0);
 #endif
     if (ret == SOCKET_ERROR)
     {

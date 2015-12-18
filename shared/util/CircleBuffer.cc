@@ -6,6 +6,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <cassert>
+#include <memory.h>
 #include "util/CircleBuffer.h"
 
 CircleBuffer::CircleBuffer(std::size_t size)

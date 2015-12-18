@@ -7,6 +7,11 @@
 
 #include <cassert>
 #include <memory.h>
+#if defined(__LINUX__)
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
 #include "net/SocketManager.h"
 
 #define DEFAULT_SOCKET_MAP_SIZE 512

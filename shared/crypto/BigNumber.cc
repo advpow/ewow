@@ -5,6 +5,7 @@
 // Description:
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <memory.h>
 #include <openssl/bn.h>
 #include <algorithm>
 #include "crypto/BigNumber.h"
