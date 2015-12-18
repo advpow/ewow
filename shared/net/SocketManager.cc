@@ -20,7 +20,7 @@ SocketManager::SocketManager(SocketFactoryPtr factory /* = NULL */,
     bool noThread /* = false */)
 : sidGen_(0)
 , noThread_(noThread)
-, sListen_(-1)
+, sListen_(INVALID_SOCKET)
 , evListen_(NULL)
 , state_(SocketManager::State::READY)
 , sFactory_(factory)
@@ -46,7 +46,7 @@ bool SocketManager::open(const char *addr, int port,
             break;
 
         sListen_ = socket(AF_INET, SOCK_STREAM, 0);
-        if (sListen_ == -1) break;
+        if (sListen_ == INVALID_SOCKET) break;
 
         struct sockaddr_in saddr;
         memset(&saddr, 0, sizeof(saddr));
@@ -113,10 +113,10 @@ do_check:
             workers_.clear();
         }
 
-        if (sListen_ != -1)
+        if (sListen_ != INVALID_SOCKET)
         {
             Socket::close(sListen_);
-            sListen_ = -1;
+            sListen_ = INVALID_SOCKET;
         }
     }
 
@@ -136,10 +136,10 @@ void SocketManager::close(void)
         evListen_ = NULL;
     }
 
-    if (sListen_ != -1)
+    if (sListen_ != INVALID_SOCKET)
     {
         Socket::close(sListen_);
-        sListen_ = -1;
+        sListen_ = INVALID_SOCKET;
     }
 
     if (sockets_.size() > 0)

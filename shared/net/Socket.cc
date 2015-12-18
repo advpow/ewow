@@ -20,7 +20,7 @@ Socket::Socket(void)
 : id_(-1)
 , ownerId_(-1)
 , sockMgr_(NULL)
-, fd_(-1)
+, fd_(INVALID_SOCKET)
 , evRecv_(NULL)
 , evSend_(NULL)
 , evBase_(NULL)
@@ -37,7 +37,7 @@ Socket::~Socket(void)
 
 bool Socket::open(ev_uintptr_t fd)
 {
-    assert(fd != -1);
+    assert(fd != INVALID_SOCKET);
     // 获取套接字远程地址
     socklen_t addrlen = sizeof(addr_);
     if (0 != ::getpeername(fd, (struct sockaddr*)&addr_, &addrlen))
@@ -100,7 +100,7 @@ bool Socket::setnonblocking(ev_uintptr_t fd, bool on /* = true */)
 
 void Socket::close(ev_uintptr_t fd)
 {
-    assert(fd != -1);
+    assert(fd != INVALID_SOCKET);
 #if defined(__WINDOWS__)
     ::closesocket(fd);
 #elif defined(__LINUX__)
@@ -196,10 +196,10 @@ void Socket::_doClose(void)
         evSend_ = NULL;
     }
 
-    if (fd_ != -1)
+    if (fd_ != INVALID_SOCKET)
     {
         Socket::close(fd_);
-        fd_ = -1;
+        fd_ = INVALID_SOCKET;
     }
 }
 

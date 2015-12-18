@@ -15,19 +15,21 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <event2/event.h>
 
-#if defined(__WINDOWS__)
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-#elif defined(__LINUX__)
-#include <time.h>
-#endif
+//#if defined(__WINDOWS__)
+//#define WIN32_LEAN_AND_MEAN
+//#include <Windows.h>
+//#elif defined(__LINUX__)
+//#include <time.h>
+//#endif
 
 typedef std::uint8_t    BYTE_t;
 
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(__LINUX__)
 #define SOCKET_ERROR            -1
+#define INVALID_SOCKET          (ev_uintptr_t)-1
 #endif
 
 #define SOCKET_ERROR_WOULDBLOCK -500
