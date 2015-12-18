@@ -151,7 +151,8 @@ bool RealmdSocket::open(ev_uintptr_t fd)
 {
     if (Socket::open(fd))
     {
-        BASIC_LOG("%s connected", getPeerAddress().c_str());
+        BASIC_LOG("new connection from %s:%d", 
+            getPeerAddress().c_str(), getPeerPort());
         return true;
     }
     return false;
@@ -189,6 +190,7 @@ void RealmdSocket::onRead(void)
         if (x == AUTH_TOTAL_COMMANDS)
         {
             DEBUG_LOG("[Auth] got unknown packet %u", (std::uint32_t)cmd);
+            close();
             return;
         }
     }
@@ -196,7 +198,8 @@ void RealmdSocket::onRead(void)
 
 void RealmdSocket::onClose(void)
 {
-    BASIC_LOG("%s disconnected", getPeerAddress().c_str());
+    BASIC_LOG("%s:%d disconnected",
+        getPeerAddress().c_str(), getPeerPort());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

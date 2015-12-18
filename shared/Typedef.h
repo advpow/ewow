@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #if defined(__WINDOWS__)
 #define WIN32_LEAN_AND_MEAN

@@ -15,5 +15,6 @@
 #include "Typedef.h"
 
 TIME_t fromStartup(void);
+std::string now(void);
 
 #endif /* SHARED_UTIL_TIME_H_ */

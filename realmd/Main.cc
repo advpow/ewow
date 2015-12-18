@@ -50,9 +50,11 @@ int main(int argc, char *argv[])
             do 
             {
                 // 读取配置
+                DEBUG_LOG("loading configuration file");
                 IniFile config("realmd.ini");
 
                 // 打开数据库连接
+                DEBUG_LOG("open database connections");
                 if (!sLoginDB.initialize(config.get<std::string>("RealmdConf.LoginDBInfo")))
                 {
                     ERROR_LOG("Initialize login database failed");
@@ -62,11 +64,12 @@ int main(int argc, char *argv[])
                 int netThreads = config.get<int>("RealmdConf.NetThreads");
 
                 // 启动网络服务
+                DEBUG_LOG("open socket manager");
                 SocketManager sockmgr(SocketFactoryPtr(new RealmdSocketFactory()), (netThreads == 0));
                 if (sockmgr.open(config.get<std::string>("RealmdConf.BindIP").c_str(),
                     config.get<int>("RealmdConf.BindPort"), config.get<int>("RealmdConf.BindBacklog"), netThreads))
                 {
-                    DEBUG_LOG("realmd is startup");
+                    BASIC_LOG("realmd is startup");
 
                     gsockmgr = &sockmgr;
                     sockmgr.join();
@@ -82,6 +85,9 @@ int main(int argc, char *argv[])
         {
             ERROR_LOG("Startup realmd server failed");
         }
+
+        // 清理日志记录器
+        sLog.clear();
     }
 
 #if defined(__WINDOWS__)

@@ -10,6 +10,7 @@ set(shared_SRC
 	Thread.h
 	Thread.cc
 	Log.h
+	Log.cc
 	
 	util/CircleBuffer.h
 	util/CircleBuffer.cc

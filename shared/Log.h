@@ -12,10 +12,41 @@
 # pragma once
 #endif
 
-#include <stdio.h>
+#include <cstdarg>
 
-#define BASIC_LOG(fmt, ...) printf(fmt, __VA_ARGS__); printf("\n")
-#define ERROR_LOG(fmt, ...) printf(fmt, __VA_ARGS__); printf("\n")
-#define DEBUG_LOG(fmt, ...) printf(fmt, __VA_ARGS__); printf("\n")
+class Log
+{
+public:
+    enum ConsoleColor
+    {
+        ForegroundWhite = 0x01,
+        ForegroundBlue = 0x02,
+        ForegroundRed = 0x04,
+        ForegroundGreen = 0x08,
+    };
+
+public:
+    Log(void);
+    ~Log(void);
+
+public:
+    void basicLog(const char *fmt, ...);
+    void errorLog(const char *fmt, ...);
+    void debugLog(const char *fmt, ...);
+
+    void clear(void);
+
+private:
+    void setForegroundColor(ConsoleColor color, bool intensity = false);
+
+private:
+    void _printLog(const char *level, const char *fmt, std::va_list vargs);
+};
+
+extern Log sLog;
+
+#define BASIC_LOG(fmt, ...) sLog.basicLog(fmt, __VA_ARGS__)
+#define ERROR_LOG(fmt, ...) sLog.errorLog(fmt, __VA_ARGS__)
+#define DEBUG_LOG(fmt, ...) sLog.debugLog(fmt, __VA_ARGS__)
 
 #endif /* SHARED_LOG_H_ */
