@@ -34,5 +34,10 @@ if(WINDOWS)
 target_link_libraries(realmd ws2_32 libevent 
 libevent_core libevent_extras libeay32 libmysql)
 else()
-target_link_libraries(realmd ${OPENSSL_LIBRARIES} ${MYSQL_LIBRARY})
+target_link_libraries(realmd  
+event 
+${OPENSSL_LIBRARIES}
+${MYSQL_LIBRARY}
+boost_system
+)
 endif()
