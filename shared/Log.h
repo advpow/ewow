@@ -45,8 +45,8 @@ private:
 
 extern Log sLog;
 
-#define BASIC_LOG(fmt, ...) sLog.basicLog(fmt, __VA_ARGS__)
-#define ERROR_LOG(fmt, ...) sLog.errorLog(fmt, __VA_ARGS__)
-#define DEBUG_LOG(fmt, ...) sLog.debugLog(fmt, __VA_ARGS__)
+#define BASIC_LOG sLog.basicLog
+#define ERROR_LOG sLog.errorLog
+#define DEBUG_LOG sLog.debugLog
 
 #endif /* SHARED_LOG_H_ */
